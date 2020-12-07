@@ -8,3 +8,5 @@ tasks:
 vscode:
   extensions:
     - ritwickdey.LiveServer@5.6.1:5Mhl1RgVVDcIym163x8r+w==
+    - zhwu95.riscv@0.0.8:Q6U728WxZxa47M8vnBd7Zw==
+    - hm.riscv-venus@1.1.0:erObiiip03RqEhw5gl4qlQ==

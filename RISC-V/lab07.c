@@ -41,6 +41,22 @@ void printSensor(int len) {
     printf("\n");
 }
 
+void readLine() {
+    char crtChar;
+    int bCounter = 0;
+
+    do {
+        crtChar = readChar();
+        if (crtChar >= '0' && crtChar <='9'){
+            buffer[bCounter] = crtChar;
+            bCounter++;
+        } 
+
+    } while(crtChar != '\n' && crtChar != ' ');
+
+    convertValue(bCounter, 0);
+}
+
 void readSensor(int X0) {
     char crtChar;
     int cCounter = 0, bCounter = 0, nCounter = 0;
