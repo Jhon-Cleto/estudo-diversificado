@@ -21,6 +21,10 @@ _start:
     la t0, CMAX
     sb a0, 0(t0) # salvar o valor de CMAX
 
+    mv a0, s1
+    mv a1, s2
+    jal readSensor # ler a linha 0 da matriz
+
     la t0, L
     lb s3, 0(t0) 
     addi s3, s3, -1 # s3 = L-1
@@ -37,6 +41,7 @@ _start:
         jal printPosition
         j whileReadSensor
     endReadSensor:
+
     li a0, 0 # exit code
     li a7, 97 # syscall exit
 _end:
@@ -285,13 +290,77 @@ decideMove:
     addi sp, sp, 4
     ret
 
+# * Entrada:
+# ** a0: Posição x do carro
+# ** a1: Posição y do carro
 printPosition:
+    addi sp, sp, -32
+    sw ra, 0(sp)
+
+    # salva "POS: " na memória
+    lw t0, strbase
+    sw t0, 16(sp)
+    la t0, strbase
+    lb t0, 4(t0)
+    sb t0, 20(sp) 
+    
+    sw a1, 25(sp) # salvar y na memória
+    li a1, 4
+    addi a2, sp, 21 # &strX
+    jal intToStr
+
+    lw a0, 25(sp) # carrega y em a0
+
+    li t0, ' '
+    sb t0, 25(sp) # adiciona ' ' na string
+
+    li a1, 4
+    addi a2, sp, 26 # &strY
+    jal intToStr
+
+    # adicionar \n e \0 ao final da string
+    li t0, '\n'
+    sb t0, 9(sp)
+    li t0, 0
+    sb t0, 10(sp)
+
+    print:
+    li a0, 1 # stdout
+    addi a1, sp, 16 # inicio da string
+    li a2, 15 #  tamanho da string "POS: XXXX YYYY\n"
+    li a7, 64
+    ecall
+
+    lw ra, 0(sp)
+    addi sp, sp, 32
+    ret    
+
+# * Entrada:
+# ** a0: valor a ser convertido
+# ** a1: número de caracteres na String
+# ** a2: Endereço onde será salva a String
+intToStr:
     addi sp, sp, -4
     sw ra, 0(sp)
 
+    li t0, 1000
+    li t1, 0 # i = 0
+    forConvert:
+        bge t1, a1, endConvert
+        div t2, a0, t0
+        addi t2, t2, 48 # t2  = (value/div) + 48, converter digito em ascii
+        add t3, a2, t1 # t3 = &adress[i]
+        sb t2, 0(t3) # salva o caractere na string
+        rem a0, a0, t0 # value = value % div
+        li t2, 10
+        div t0, t0, t2 # div = div/10
+        addi t1, t1, 1
+        j forConvert
+    endConvert:
+
     lw ra, 0(sp)
     addi sp, sp, 4
-    ret    
+    ret
 
 .bss
     C: .skip 4
@@ -302,3 +371,5 @@ printPosition:
     buffer: .skip 3
     .align 2
     sensor: .skip 11
+.data
+    strbase: .ascii "POS: "
