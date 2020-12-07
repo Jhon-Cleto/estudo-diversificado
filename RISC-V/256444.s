@@ -27,8 +27,9 @@ _start:
     whileReadSensor:
         bge s2, s3, endReadSensor # y >= L-1
         mv a0, s1
+        mv a1, s2
         jal readSensor
-        jal decide
+        jal decideMove
         add s1, s1, a0 # x = x+dir
         addi s2, s2, 1 # y++
         mv a0, s1
@@ -147,6 +148,7 @@ convertValue:
 
 # * Entrada:
 # ** a0: posição x do carro
+# ** a1: posição y do carro
 # * lê a próxima linha da matriz
 # * salva o valor de 11 posições próximas ao x do carro
 readSensor:
@@ -194,17 +196,91 @@ readSensor:
 
         no_action:
         li t0, '\n'
-        bne a2, t0, doReadSensor
-
+        la t1, L 
+        la t2, C
+        lb t1, 0(t1)  
+        addi t1, t1, -2 # t1 = L-2
+        lb t2, 0(t2) 
+        addi t2, t2, -1 # t2 = C-1 
+        
+        # while (crtChar != '\n' && (y != L-2 || cCounter != C-1) )
+        beq a2, t0, endReadSensor
+        bne a1, t1, doReadSensor
+        bne a3, t2, doReadSensor
     endReadSensor:
     lw ra, 0(sp)
     addi sp, sp, 4
     ret
 
-decide:
+# * Retorna a direção que o carro deve seguir em x
+# * direita: 1, esquerda: -1, centro: 0
+decideMove:
     addi sp, sp, -4
     sw ra, 0(sp)
 
+    li t0, 5 # S_POS = 5
+    la t3, sensor # t3 = &sensor[0]
+    li t1, 100 # valor max preto
+
+    addi t2, t0, -1 # t2 = S_POS-1
+    add t2, t3, t2 # t2 = &sensor[S_POS-1]
+    lb t2, 0(t2) # t2 = sensor[S_POS-1]
+    bge t1, t2, nd_center # 100 >= sensor[S_POS-1] 
+
+    addi t2, t0, 1 # t2 = S_POS+1
+    add t2, t3, t2 # t2 = &sensor[S_POS+1]
+    lb t2, 0(t2) # t2 = sensor[S_POS+1]
+    bge t1, t2, nd_center # 100 >= sensor[S_POS+1]
+    j d_center
+
+    nd_center:
+    li t2, 1 # fLeft = 1
+    li t4, 1 # fRight = 1
+
+    li t5, 0 # i = 0
+    forLeft:
+        bge t5, t0, endLeft # i >= S_POS
+        add a1, t3, t5 # a1 = &sensor[i]
+        lb a1, 0(a1) # a1 = sensor[i]
+        bge t1, a1, c_left # 100 >= sensor[i]
+        li t2, 0 # fLeft = 0
+        j endLeft
+        c_left: 
+        addi t5, t5, 1 # i++
+        j forLeft
+
+    endLeft:
+
+    addi t5, t0, 1 # i = S_POS+1
+    addi t6, t0, 6 # t6 = S_POS+6
+    forRight:
+        bge t5, t6, endRight
+        add a1, t3, t5 # a1 = &sensor[i]
+        lb a1, 0(a1) # a1 = sensor[i]
+        bge t1, a1, c_right # 100 >= sensor[i]
+        li t4, 0 # fRight = 0
+        j endRight
+        c_right:
+        addi t5, t5, 1
+        j forRight
+    endRight:
+    
+    d_left:
+    beq t2, zero, d_right 
+    bne t4, zero, d_right
+    li a0, -1
+    j d_finish
+
+    d_right:
+    bne t2, zero, d_center
+    beq t4, zero, d_center
+    li a0, 1
+    j d_finish
+
+    d_center:
+    li a0, 0
+
+    d_finish:
     lw ra, 0(sp)
     addi sp, sp, 4
     ret
